@@ -3,7 +3,8 @@ const axios = require('axios');
 const axiosCookieJarSupport = require('axios-cookiejar-support').default;
 const tough = require('tough-cookie');
 const request = require('request');
-const pd = require('node-pandas');
+// const pd = require('node-pandas');
+const dataForge = require("data-forge");
 
 const {
   genericPayload,
@@ -15,7 +16,7 @@ const {
   accessTokenPayload,
   marketscripPayload
 } = require('./const');
-const {AES128Encrypt, AES256Encrypt} = require('./utils');
+const { AES128Encrypt, AES256Encrypt } = require('./utils');
 
 axiosCookieJarSupport(axios);
 
@@ -111,7 +112,7 @@ function FivePaisaClient(conf) {
   this.marketpayload.head.key = conf.userKey;
   this.marketpayload.head.userId = conf.userId;
   this.marketpayload.head.password = conf.password;
-  
+
   // market scrip payload
   this.marketscripPayload = marketscripPayload;
   this.marketscripPayload.head.key = conf.userKey;
@@ -173,8 +174,8 @@ function FivePaisaClient(conf) {
    * @memberOf FivePaisaClient
    * @param {Object} response
    */
-  this.init = function(response) {
-    const promise = new Promise(function(resolve, reject) {
+  this.init = function (response) {
+    const promise = new Promise(function (resolve, reject) {
       if (response.data.body.Message == '') {
         console.log(GREEN, `Logged in`);
         CLIENT_CODE = response.data.body.ClientCode;
@@ -189,29 +190,29 @@ function FivePaisaClient(conf) {
     return promise;
   };
 
-  this.get_access_token = function(requesttoken) {
+  this.get_access_token = function (requesttoken) {
     try {
       this.accessTokenPayload.body.RequestToken = requesttoken;
 
-      const promise = new Promise(function(resolve, reject) {
+      const promise = new Promise(function (resolve, reject) {
         request_instance
-            .post(ACCESS_TOKEN_ROUTE, accessTokenPayload)
-            .then((response) => {
-              if (CLIENT_CODE === null) {
-                CLIENT_CODE = response.data.body.ClientCode;
-              }
+          .post(ACCESS_TOKEN_ROUTE, accessTokenPayload)
+          .then((response) => {
+            if (CLIENT_CODE === null) {
+              CLIENT_CODE = response.data.body.ClientCode;
+            }
 
-              if (
-                !response?.data?.body?.AccessToken ||
+            if (
+              !response?.data?.body?.AccessToken ||
               response.data.body.AccessToken === null ||
               response.data.body.AccessToken === ''
-              ) {
-                reject(response.data.body.AccessToken);
-              } else {
-                jwttoken = response.data.body.AccessToken;
-                resolve(response.data.body.AccessToken);
-              }
-            }).catch((err) => console.log(err));
+            ) {
+              reject(response.data.body.AccessToken);
+            } else {
+              jwttoken = response.data.body.AccessToken;
+              resolve(response.data.body.AccessToken);
+            }
+          }).catch((err) => console.log(err));
       });
 
       return promise;
@@ -220,9 +221,9 @@ function FivePaisaClient(conf) {
     }
   };
 
-  this.set_access_token = function(accessToken){
+  this.set_access_token = function (accessToken) {
     try {
-      const promise = new Promise(function(resolve, reject) {
+      const promise = new Promise(function (resolve, reject) {
         if (accessToken === null || accessToken === '') {
           console.log("Please pass access token");
           reject(accessToken);
@@ -238,14 +239,14 @@ function FivePaisaClient(conf) {
   }
 
   // generate access token from OAuth
-  this.get_oauth_session = function(requesttoken) {
+  this.get_oauth_session = function (requesttoken) {
     try {
       const promise = new Promise((resolve, reject) => {
         this.get_access_token(requesttoken)
-        .then((res)=>{
-          console.log("Logged in!!");
-          resolve(res);
-        }).catch((err) => reject(err))
+          .then((res) => {
+            console.log("Logged in!!");
+            resolve(res);
+          }).catch((err) => reject(err))
       })
       return promise;
     } catch (err) {
@@ -254,15 +255,15 @@ function FivePaisaClient(conf) {
   };
 
 
-  this.get_request_token = function(clientCode, totp, pin) {
-    if(!CLIENT_CODE){
+  this.get_request_token = function (clientCode, totp, pin) {
+    if (!CLIENT_CODE) {
       CLIENT_CODE = clientCode;
     }
     this.totpPayload.body.Email_ID = CLIENT_CODE;
     this.totpPayload.body.TOTP = totp;
     this.totpPayload.body.PIN = pin;
     try {
-      const promise = new Promise(function(resolve, reject) {
+      const promise = new Promise(function (resolve, reject) {
         request_instance.post(TOTP_ROUTE, totpPayload).then((response) => {
           if (response.data.body.RequestToken === null) {
             reject(response.data.body.RequestToken);
@@ -278,22 +279,22 @@ function FivePaisaClient(conf) {
     }
   };
 
-  this.get_TOTP_Session = function(clientCode, totp, pin) {
+  this.get_TOTP_Session = function (clientCode, totp, pin) {
     try {
       const promise = new Promise((resolve, reject) => {
         this.get_request_token(clientCode, totp, pin)
-            .then((response) => {
-              this.get_access_token(response)
-                  .then((res) => {
-                    if (res === null || res === '') {
-                      reject(res);
-                    } else {
-                      resolve(res);
-                    }
-                  })
-                  .catch((err2) => reject(err2));
-            })
-            .catch((err) => reject(err));
+          .then((response) => {
+            this.get_access_token(response)
+              .then((res) => {
+                if (res === null || res === '') {
+                  reject(res);
+                } else {
+                  resolve(res);
+                }
+              })
+              .catch((err2) => reject(err2));
+          })
+          .catch((err) => reject(err));
       });
 
       return promise;
@@ -315,7 +316,7 @@ function FivePaisaClient(conf) {
    *  });
    */
 
-  this.getHoldings = function() {
+  this.getHoldings = function () {
     this.genericPayload.head.requestCode = HOLDINGS_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
@@ -324,21 +325,21 @@ function FivePaisaClient(conf) {
       'Authorization': `Bearer ${jwttoken}`,
     };
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       try {
         request_instance
-            .post(HOLDINGS_ROUTE, payload, {headers: headers})
-            .then((response) => {
-              if (response.data.body.Data.length === 0) {
-                reject(response.data.body.Message);
-              } else {
-                resolve(response.data.body.Data);
-              }
-            });
+          .post(HOLDINGS_ROUTE, payload, { headers: headers })
+          .then((response) => {
+            if (response.data.body.Data.length === 0) {
+              reject(response.data.body.Message);
+            } else {
+              resolve(response.data.body.Data);
+            }
+          });
       } catch (err) {
         console.error(err);
       }
-      });
+    });
 
     return promise;
   };
@@ -355,7 +356,7 @@ function FivePaisaClient(conf) {
    *    console.log(err)
    *  });
    */
-  this.getOrderBook = function() {
+  this.getOrderBook = function () {
     this.genericPayload.head.requestCode = ORDER_BOOK_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
@@ -363,16 +364,16 @@ function FivePaisaClient(conf) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${jwttoken}`,
     };
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(ORDER_BOOK_ROUTE, payload, {headers: headers})
-          .then((response) => {
-            if (response.data.body.OrderBookDetail.length === 0) {
-              reject(response.data.body.Message);
-            } else {
-              resolve(response.data.body.OrderBookDetail);
-            }
-          });
+        .post(ORDER_BOOK_ROUTE, payload, { headers: headers })
+        .then((response) => {
+          if (response.data.body.OrderBookDetail.length === 0) {
+            reject(response.data.body.Message);
+          } else {
+            resolve(response.data.body.OrderBookDetail);
+          }
+        });
     });
 
     return promise;
@@ -390,7 +391,7 @@ function FivePaisaClient(conf) {
    *    console.log(err)
    *  });
    */
-  this.getMargin = function() {
+  this.getMargin = function () {
     this.genericPayload.head.requestCode = MARGIN_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
@@ -398,16 +399,16 @@ function FivePaisaClient(conf) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${jwttoken}`,
     };
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(MARGIN_ROUTE, payload, {headers: headers})
-          .then((response) => {
-            if (response.data.body.EquityMargin.length === 0) {
-              reject(response.data.body.Message);
-            } else {
-              resolve(response.data.body.EquityMargin);
-            }
-          });
+        .post(MARGIN_ROUTE, payload, { headers: headers })
+        .then((response) => {
+          if (response.data.body.EquityMargin.length === 0) {
+            reject(response.data.body.Message);
+          } else {
+            resolve(response.data.body.EquityMargin);
+          }
+        });
     });
 
     return promise;
@@ -425,7 +426,7 @@ function FivePaisaClient(conf) {
    *    console.log(err)
    *  });
    */
-  this.getPositions = function() {
+  this.getPositions = function () {
     this.genericPayload.head.requestCode = POSITIONS_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
@@ -433,22 +434,22 @@ function FivePaisaClient(conf) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${jwttoken}`,
     };
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(POSITIONS_ROUTE, payload, {headers: headers})
-          .then((response) => {
-            if (response.data.body.NetPositionDetail.length === 0) {
-              reject(response.data.body.Message);
-            } else {
-              resolve(response.data.body.NetPositionDetail);
-            }
-          });
+        .post(POSITIONS_ROUTE, payload, { headers: headers })
+        .then((response) => {
+          if (response.data.body.NetPositionDetail.length === 0) {
+            reject(response.data.body.Message);
+          } else {
+            resolve(response.data.body.NetPositionDetail);
+          }
+        });
     });
 
     return promise;
   };
 
-  this._order_request = function(orderType) {
+  this._order_request = function (orderType) {
     let requrl = '';
     let payload;
 
@@ -475,17 +476,17 @@ function FivePaisaClient(conf) {
       'Authorization': `Bearer ${jwttoken}`,
     };
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(requrl, payload, {
-            headers: headers,
-          })
-          .then((response) => {
-            resolve(response.data.body);
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        .post(requrl, payload, {
+          headers: headers,
+        })
+        .then((response) => {
+          resolve(response.data.body);
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
 
     return promise;
@@ -536,10 +537,10 @@ function FivePaisaClient(conf) {
    * @param {string} exchange - Exchange name. "N" - NSE, "B" - BSE
    * @param {OrderRequestParams} [params] - Parameters for placing complex orders
    */
-  this.placeOrder = function(orderType, qty, exchange, params) {
+  this.placeOrder = function (orderType, qty, exchange, params) {
     if (orderType === undefined) {
       throw new Error(
-          `No orderType specified, valid order types are "BUY" and "SELL"`,
+        `No orderType specified, valid order types are "BUY" and "SELL"`,
       );
     }
 
@@ -549,7 +550,7 @@ function FivePaisaClient(conf) {
 
     if (exchange == undefined) {
       throw new Error(
-          `No exchange specified, valid exchange types are "NSE" and "BSE"`,
+        `No exchange specified, valid exchange types are "NSE" and "BSE"`,
       );
     }
 
@@ -591,18 +592,18 @@ function FivePaisaClient(conf) {
     return this._order_request('P');
   };
 
-  this.bocoorder = function(
-      scrip_code,
-      Qty,
-      LimitPriceInitialOrder,
-      TriggerPriceInitialOrder,
-      LimitPriceProfitOrder,
-      BuySell,
-      Exch,
-      ExchType,
-      RequestType,
-      TriggerPriceForSL,
-      params,
+  this.bocoorder = function (
+    scrip_code,
+    Qty,
+    LimitPriceInitialOrder,
+    TriggerPriceInitialOrder,
+    LimitPriceProfitOrder,
+    BuySell,
+    Exch,
+    ExchType,
+    RequestType,
+    TriggerPriceForSL,
+    params,
   ) {
     params = params || defaultbocoParams;
     this.genericPayload.body.ScripCode = scrip_code;
@@ -655,27 +656,27 @@ function FivePaisaClient(conf) {
 
     const payload = this.genericPayload;
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(BO_CO_ROUTE, payload)
-          .then((response) => {
-            resolve(response.data.body);
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        .post(BO_CO_ROUTE, payload)
+        .then((response) => {
+          resolve(response.data.body);
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
 
     return promise;
   };
 
-  this.Mod_bo_order = function(
-      orderType,
-      scripCode,
-      qty,
-      exchange,
-      exchangeOrderID,
-      params,
+  this.Mod_bo_order = function (
+    orderType,
+    scripCode,
+    qty,
+    exchange,
+    exchangeOrderID,
+    params,
   ) {
     params = params || defaultOrderParams;
     this.orderPayload.body.ExchOrderID = exchangeOrderID;
@@ -720,15 +721,15 @@ function FivePaisaClient(conf) {
 
     const payload = this.orderPayload;
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(BO_MOD_ROUTE, payload)
-          .then((response) => {
-            resolve(response.data.body);
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        .post(BO_MOD_ROUTE, payload)
+        .then((response) => {
+          resolve(response.data.body);
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
 
     return promise;
@@ -746,14 +747,14 @@ function FivePaisaClient(conf) {
    * @param {string} exchange_type - exchange type you want to trade.
    * @param {object} [params] - Parameters for placing complex orders
    */
-  
-  this.modifyOrder = function(
-      modify_params
+
+  this.modifyOrder = function (
+    modify_params
   ) {
     this.orderPayload.body.ExchOrderID = modify_params.exchangeOrderID;
     this.orderPayload.body.Qty = modify_params.Qty;
     this.orderPayload.body.Price = modify_params.Price;
-    
+
     this.orderPayload.body.IsIntraday = modify_params.is_intraday;
     this.orderPayload.body.Exchange = modify_params.exchange;
     this.orderPayload.body.ExchangeType = modify_params.exchange_type;
@@ -770,12 +771,12 @@ function FivePaisaClient(conf) {
    * @param {string} exchange - Exchange
    * @param {string} exchange_type - exchange type you want to trade.
    */
-  this.cancelOrder = function(exchangeOrderID) {
+  this.cancelOrder = function (exchangeOrderID) {
     this.genericPayload.body.ExchOrderID = exchangeOrderID;
 
     return this._order_request('C');
   };
-  
+
 
   /**
    * Gets the order status of the orders provided
@@ -792,7 +793,7 @@ function FivePaisaClient(conf) {
    *  }
    * ]
    */
-  this.getOrderStatus = function(orderList) {
+  this.getOrderStatus = function (orderList) {
     this.genericPayload.head.requestCode = ORDER_STATUS_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     this.genericPayload.body.OrdStatusReqList = orderList;
@@ -802,32 +803,32 @@ function FivePaisaClient(conf) {
       'Authorization': `Bearer ${jwttoken}`,
     };
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(ORDER_STATUS_ROUTE, payload, {headers: headers})
-          .then((response) => {
-            if (response.data.body.OrdStatusResLst === 0) {
-              reject({err: 'No info found'});
-            } else {
-              resolve(response.data.body);
-            }
-          });
+        .post(ORDER_STATUS_ROUTE, payload, { headers: headers })
+        .then((response) => {
+          if (response.data.body.OrdStatusResLst === 0) {
+            reject({ err: 'No info found' });
+          } else {
+            resolve(response.data.body);
+          }
+        });
     });
 
     return promise;
   };
 
-  this.getmarketdepth = function(DepthList) {
+  this.getmarketdepth = function (DepthList) {
     this.genericPayload.head.requestCode = MARKET_DEPTH_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     this.genericPayload.body.Count = '1';
     this.genericPayload.body.Data = DepthList;
     const payload = this.genericPayload;
 
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance.post(MARKET_DEPTH_ROUTE, payload).then((response) => {
         if (response.data.body.Data.length === 0) {
-          reject({err: 'No info found'});
+          reject({ err: 'No info found' });
         } else {
           resolve(response.data.body);
         }
@@ -852,7 +853,7 @@ function FivePaisaClient(conf) {
    *  }
    * ]
    */
-  this.getTradeInfo = function(tradeDetailList) {
+  this.getTradeInfo = function (tradeDetailList) {
     this.genericPayload.head.requestCode = TRADE_INFO_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     this.genericPayload.body.TradeDetailList = tradeDetailList;
@@ -861,22 +862,22 @@ function FivePaisaClient(conf) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${jwttoken}`,
     };
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance
-          .post(TRADE_INFO_ROUTE, payload, {headers: headers})
-          .then((response) => {
-            if (response.data.body.TradeDetail.length === 0) {
-              reject({err: 'No info found'});
-            } else {
-              resolve(response.data.body.TradeDetail);
-            }
-          });
+        .post(TRADE_INFO_ROUTE, payload, { headers: headers })
+        .then((response) => {
+          if (response.data.body.TradeDetail.length === 0) {
+            reject({ err: 'No info found' });
+          } else {
+            resolve(response.data.body.TradeDetail);
+          }
+        });
     });
 
     return promise;
   };
 
-  this.getMarketFeed = function(reqlist) {
+  this.getMarketFeed = function (reqlist) {
     this.marketpayload.body.Count = CLIENT_CODE;
     this.marketpayload.body.MarketFeedData = reqlist;
 
@@ -886,32 +887,32 @@ function FivePaisaClient(conf) {
       'Authorization': `Bearer ${jwttoken}`,
     };
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       try {
-      request_instance
-          .post(Market_ROUTE, payload, {headers: headers})
-          .then((response) => { 
-            if (response.data.body.Data === null ) {
+        request_instance
+          .post(Market_ROUTE, payload, { headers: headers })
+          .then((response) => {
+            if (response.data.body.Data === null) {
               resolve(response.data.body.Message);
-            } 
-            if(response.data.body.Data?.length === 0){
+            }
+            if (response.data.body.Data?.length === 0) {
               resolve(response.data.body.Message);
             }
             else {
               resolve(response.data.body.Data);
             }
-            
+
           })
-          .catch((err) => 
-          reject());
-        } catch (err) {
-          console.error(err);
-        }
+          .catch((err) =>
+            reject());
+      } catch (err) {
+        console.error(err);
+      }
     });
   };
 
 
-  this.fetch_market_feed_by_scrip = function(reqlist) {
+  this.fetch_market_feed_by_scrip = function (reqlist) {
     this.marketscripPayload.body.MarketFeedData = reqlist;
 
     const payload = this.marketscripPayload;
@@ -920,31 +921,31 @@ function FivePaisaClient(conf) {
       'Authorization': `Bearer ${jwttoken}`,
     };
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       try {
-      request_instance
-          .post(MARKET_SCRIP_ROUTE, payload, {headers: headers})
-          .then((response) => { 
-            if (response.data.body.Data === null ) {
+        request_instance
+          .post(MARKET_SCRIP_ROUTE, payload, { headers: headers })
+          .then((response) => {
+            if (response.data.body.Data === null) {
               resolve(response.data.body.Message);
-            } 
-            if(response.data.body.Data?.length === 0){
+            }
+            if (response.data.body.Data?.length === 0) {
               resolve(response.data.body.Message);
             }
             else {
               resolve(response.data.body.Data);
             }
-            
+
           })
-          .catch((err) => 
-          reject());
-        } catch (err) {
-          console.error(err);
-        }
+          .catch((err) =>
+            reject());
+      } catch (err) {
+        console.error(err);
+      }
     });
   };
 
-  this.historicalData = function(Exch, Exchtype, scrip, timeframe, from, to) {
+  this.historicalData = function (Exch, Exchtype, scrip, timeframe, from, to) {
     const timeList = ['1m', '5m', '10m', '15m', '30m', '60m', '1d'];
     const res = timeList.includes(timeframe);
 
@@ -955,62 +956,73 @@ function FivePaisaClient(conf) {
       };
 
       request_instance
-          .post(
-              'https://Openapi.5paisa.com/VendorsAPI/Service1.svc/ValidateClientToken',
-              req_data,
-          )
-          .then((response) => {
-            if (response.data.Message === 'Success') {
-              const h = {
-                'Ocp-Apim-Subscription-Key': 'c89fab8d895a426d9e00db380b433027',
-                'x-clientcode': CLIENT_CODE,
-                'x-auth-token': jwttoken,
-              };
+        .post(
+          'https://Openapi.5paisa.com/VendorsAPI/Service1.svc/ValidateClientToken',
+          req_data,
+        )
+        .then((response) => {
+          if (response.data.Message === 'Success') {
+            const h = {
+              'Ocp-Apim-Subscription-Key': 'c89fab8d895a426d9e00db380b433027',
+              'x-clientcode': CLIENT_CODE,
+              'x-auth-token': jwttoken,
+            };
 
-              const url = `https://openapi.5paisa.com/historical/${Exch}/${Exchtype}/${scrip}/${timeframe}?from=${from}&end=${to}`;
+            const url = `https://openapi.5paisa.com/historical/${Exch}/${Exchtype}/${scrip}/${timeframe}?from=${from}&end=${to}`;
 
-              // set header
-              const headers = h;
+            // set header
+            const headers = h;
 
-              request.get({headers: headers, url: url, method: 'GET'}, function(
-                  e,
-                  r,
-                  body,
-              ) {
-                const bodyValues = JSON.parse(body);
-                const candleList = bodyValues.data.candles;
-                const columns = [
-                  'Datetime',
-                  'Open',
-                  'High',
-                  'Low',
-                  'Close',
-                  'Volume',
-                ];
-                const df = pd.DataFrame(candleList, columns);
+            request.get({ headers: headers, url: url, method: 'GET' }, function (
+              e,
+              r,
+              body,
+            ) {
+              const bodyValues = JSON.parse(body);
+              const candleList = bodyValues.data.candles;
+              // const columns = [
+              //   'Datetime',
+              //   'Open',
+              //   'High',
+              //   'Low',
+              //   'Close',
+              //   'Volume',
+              // ];
+              // const df = pd.DataFrame(candleList, columns);
 
-                return df.show;
+              // return df.show;
+              const df = new dataForge.DataFrame({
+                values: candleList,
+                columnNames: ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume']
               });
-            } else {
-              return response.data;
-            }
-          });
+
+              // To inspect first few rows
+              console.log(df.head().toArray());
+
+              // If you want to return the DataFrame itself
+              return df;
+            });
+          } else {
+            return response.data;
+          }
+        });
     } else {
       return 'Time frame is invalid.';
     }
   };
 
-  this.ideas_buy = function() {
+  this.ideas_buy = function () {
     this.genericPayload.head.requestCode = IDEAS_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance.post(IDEAS_ROUTE, payload).then((response) => {
         if (response.data.body.Data.length === 0) {
           reject(response.data.body.Message);
         } else {
           const bodyValues = JSON.parse(response.data.body.Data[0].payload);
-          const df = pd.DataFrame(bodyValues);
+          // const df = pd.DataFrame(bodyValues);
+          const df = new dataForge.DataFrame(bodyValues);
           resolve(df);
         }
       });
@@ -1019,17 +1031,18 @@ function FivePaisaClient(conf) {
     return promise;
   };
 
-  this.ideas_trade = function() {
+  this.ideas_trade = function () {
     this.genericPayload.head.requestCode = IDEAS_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance.post(IDEAS_ROUTE, payload).then((response) => {
         if (response.data.body.Data.length === 0) {
           reject(response.data.body.Message);
         } else {
           const bodyValues = JSON.parse(response.data.body.Data[1].payload);
-          const df = pd.DataFrame(bodyValues);
+          // const df = pd.DataFrame(bodyValues);
+          const df = new dataForge.DataFrame(bodyValues);
           resolve(df);
         }
       });
@@ -1038,11 +1051,11 @@ function FivePaisaClient(conf) {
     return promise;
   };
 
-  this.getTradeBook = function() {
+  this.getTradeBook = function () {
     this.genericPayload.head.requestCode = TRADEBOOK_REQUEST_CODE;
     this.genericPayload.body.ClientCode = CLIENT_CODE;
     const payload = this.genericPayload;
-    const promise = new Promise(function(resolve, reject) {
+    const promise = new Promise(function (resolve, reject) {
       request_instance.post(TRADEBOOK_ROUTE, payload).then((response) => {
         if (response.data.body.TradeBookDetail.length === 0) {
           reject(response.data.body.Message);
